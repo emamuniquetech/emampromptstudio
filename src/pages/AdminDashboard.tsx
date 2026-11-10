@@ -521,14 +521,52 @@ export const AdminDashboard: React.FC = () => {
                 onChange={(e) => updateAdSettings({ ...adSettings, provider: e.target.value as any })}
                 className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 text-xs text-white"
               >
-                <option value="Google AdSense / Rewarded">Google AdSense / Rewarded</option>
-                <option value="AdMob">AdMob</option>
+                <option value="Google Ad Manager">Google Ad Manager (Web/PWA)</option>
+                <option value="AdMob">AdMob (Native App)</option>
                 <option value="Custom Rewarded Ad">Custom Rewarded Ad Network</option>
               </select>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-400 block mb-1">Network ID</label>
+                <input
+                  type="text"
+                  value={adSettings.adManagerNetworkId}
+                  onChange={(e) => updateAdSettings({ ...adSettings, adManagerNetworkId: e.target.value })}
+                  placeholder="e.g. 1234567"
+                  className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 text-xs text-white"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 block mb-1">Rewarded Ad Unit Path</label>
+                <input
+                  type="text"
+                  value={adSettings.adManagerAdUnitPath}
+                  onChange={(e) => updateAdSettings({ ...adSettings, adManagerAdUnitPath: e.target.value })}
+                  placeholder="/1234/rewarded_ad_unit"
+                  className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 text-xs text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <label className="flex items-center justify-between flex-1 p-4 bg-[#0D0D18] border border-[#242438] rounded-2xl cursor-pointer">
+                <div>
+                  <span className="text-sm font-bold text-white block">Test Mode</span>
+                  <span className="text-[10px] text-gray-400">Use test ad units for development.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={adSettings.testMode}
+                  onChange={(e) => updateAdSettings({ ...adSettings, testMode: e.target.checked })}
+                  className="w-5 h-5 rounded bg-[#151525]"
+                />
+              </label>
+            </div>
+
             <div>
-              <label className="text-xs font-bold text-gray-400 block mb-1">Ad Duration (Seconds)</label>
+              <label className="text-xs font-bold text-gray-400 block mb-1">Simulated Delay (Seconds)</label>
               <input
                 type="number"
                 value={adSettings.rewardDurationSeconds}

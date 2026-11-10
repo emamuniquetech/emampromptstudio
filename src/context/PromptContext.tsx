@@ -1,6 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { PromptItem, AdSettings } from '../types';
 import { STARTER_PROMPTS } from '../data/starterPrompts';
+
+// Google Publisher Tag (GPT) types
+declare global {
+  interface Window {
+    googletag: any;
+  }
+}
 
 interface PromptContextType {
   prompts: PromptItem[];
@@ -13,6 +20,7 @@ interface PromptContextType {
   adSettings: AdSettings;
   rewardedAdModalOpen: boolean;
   pendingCopyPrompt: string | null;
+  adStatus: 'idle' | 'requesting' | 'ready' | 'playing' | 'granted' | 'error' | 'not-available';
   
   setCurrentView: (view: string, promptId?: string | null) => void;
   openVideoDemo: (url: string, title: string, tool: string, description: string) => void;
@@ -32,6 +40,7 @@ interface PromptContextType {
   
   updateAdSettings: (settings: AdSettings) => void;
   requestCopyPrompt: (promptText: string) => void;
+  playRewardedAd: () => void;
   executeCopy: () => void;
   closeRewardedAdModal: () => void;
   
@@ -72,11 +81,20 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [adSettings, setAdSettings] = useState<AdSettings>(() => {
     const saved = localStorage.getItem('emam_ad_settings');
-    return saved ? JSON.parse(saved) : { enabled: true, provider: 'Google AdSense / Rewarded', rewardDurationSeconds: 5 };
+    return saved ? JSON.parse(saved) : { 
+      enabled: true, 
+      provider: 'Google Ad Manager', 
+      rewardDurationSeconds: 5,
+      adManagerNetworkId: '',
+      adManagerAdUnitPath: '/21775744923/example/rewarded',
+      testMode: true,
+      disabledCategories: []
+    };
   });
 
   const [rewardedAdModalOpen, setRewardedAdModalOpen] = useState(false);
   const [pendingCopyPrompt, setPendingCopyPrompt] = useState<string | null>(null);
+  const [adStatus, setAdStatus] = useState<'idle' | 'requesting' | 'ready' | 'playing' | 'granted' | 'error' | 'not-available'>('idle');
 
   useEffect(() => {
     localStorage.setItem('emam_prompts_db', JSON.stringify(prompts));
@@ -162,10 +180,70 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAdSettings(settings);
   };
 
+  // Rewarded Ad Management via GPT
+  const requestRewardedAd = useCallback(() => {
+    if (!window.googletag) {
+      setAdStatus('error');
+      return;
+    }
+
+    setAdStatus('requesting');
+    const { googletag } = window;
+
+    googletag.cmd.push(() => {
+      // Clear previous slots to ensure fresh request
+      googletag.destroySlots();
+
+      const rewardedSlot = googletag.defineOutOfPageSlot(
+        adSettings.adManagerAdUnitPath,
+        googletag.enums.OutOfPageFormat.REWARDED
+      );
+
+      if (rewardedSlot) {
+        rewardedSlot.addService(googletag.pubads());
+        
+        googletag.pubads().addEventListener('rewardedSlotReady', (event: any) => {
+          setAdStatus('ready');
+        });
+
+        googletag.pubads().addEventListener('rewardedSlotGranted', (event: any) => {
+          setAdStatus('granted');
+          // Automatically trigger copy after grant if we want, or wait for user to close
+        });
+
+        googletag.pubads().addEventListener('rewardedSlotClosed', (event: any) => {
+          setAdStatus(prev => prev === 'granted' ? 'granted' : 'idle');
+          // If status was already granted, we can finalize the copy
+        });
+
+        googletag.enableServices();
+        googletag.display(rewardedSlot);
+      } else {
+        setAdStatus('not-available');
+      }
+    });
+  }, [adSettings.adManagerAdUnitPath]);
+
+  const playRewardedAd = () => {
+    if (adStatus === 'ready' && window.googletag) {
+      setAdStatus('playing');
+      window.googletag.pubads().getSlots().forEach((slot: any) => {
+        if (slot.getOutOfPageVariant() === window.googletag.enums.OutOfPageFormat.REWARDED) {
+          window.googletag.pubads().refresh([slot]);
+        }
+      });
+      // Note: GPT rewarded ads show automatically when ready usually, 
+      // but if we use display() it might show immediately.
+      // The event rewardedSlotReady is key.
+    }
+  };
+
   const requestCopyPrompt = (promptText: string) => {
     setPendingCopyPrompt(promptText);
     if (adSettings.enabled) {
       setRewardedAdModalOpen(true);
+      setAdStatus('idle');
+      requestRewardedAd();
     } else {
       executeCopy();
     }
@@ -177,11 +255,18 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     setRewardedAdModalOpen(false);
     setPendingCopyPrompt(null);
+    setAdStatus('idle');
   };
 
   const closeRewardedAdModal = () => {
     setRewardedAdModalOpen(false);
     setPendingCopyPrompt(null);
+    setAdStatus('idle');
+    if (window.googletag) {
+      window.googletag.cmd.push(() => {
+        window.googletag.destroySlots();
+      });
+    }
   };
 
   const exportDatabase = () => {
@@ -224,6 +309,7 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       adSettings,
       rewardedAdModalOpen,
       pendingCopyPrompt,
+      adStatus,
       setCurrentView,
       openVideoDemo,
       closeVideoDemo,
@@ -239,6 +325,7 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       toggleFeatured,
       updateAdSettings,
       requestCopyPrompt,
+      playRewardedAd,
       executeCopy,
       closeRewardedAdModal,
       exportDatabase,

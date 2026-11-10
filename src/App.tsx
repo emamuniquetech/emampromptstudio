@@ -13,6 +13,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 
 import { Home } from './pages/Home';
 import { Features } from './pages/Features';
+import { DownloadApp } from './pages/DownloadApp';
 import { PhotoPrompts } from './pages/PhotoPrompts';
 import { VideoPrompts } from './pages/VideoPrompts';
 import { TrendingPrompts } from './pages/TrendingPrompts';
@@ -38,6 +39,8 @@ const AppContent: React.FC = () => {
         return <Home />;
       case 'features':
         return <Features />;
+      case 'download':
+        return <DownloadApp />;
       case 'photo':
         return <PhotoPrompts />;
       case 'video':

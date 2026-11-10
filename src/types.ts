@@ -22,6 +22,10 @@ export interface PromptItem {
 
 export interface AdSettings {
   enabled: boolean;
-  provider: 'Google AdSense / Rewarded' | 'AdMob' | 'Custom Rewarded Ad';
+  provider: 'Google Ad Manager' | 'AdMob' | 'Custom Rewarded Ad';
   rewardDurationSeconds: number;
+  adManagerNetworkId: string;
+  adManagerAdUnitPath: string;
+  testMode: boolean;
+  disabledCategories: string[];
 }

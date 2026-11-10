@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { usePrompts } from '../context/PromptContext';
 import { 
-  Sparkles, Home, Image, Video, Flame, Wand2, Grid, Heart, Shield, Menu, X, Search, LogOut 
+  Sparkles, Home, Image, Video, Flame, Wand2, Grid, Heart, Shield, Menu, X, Search, LogOut, Download 
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -12,6 +12,7 @@ export const Navbar: React.FC = () => {
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'features', label: 'Features', icon: Sparkles },
+    { id: 'download', label: 'Download App', icon: Download },
     { id: 'photo', label: 'AI Photo', icon: Image },
     { id: 'video', label: 'AI Video', icon: Video },
     { id: 'trending', label: 'Trending', icon: Flame },
