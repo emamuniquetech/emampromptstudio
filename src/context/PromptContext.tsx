@@ -21,7 +21,6 @@ interface PromptContextType {
   rewardedAdModalOpen: boolean;
   pendingCopyPrompt: string | null;
   adStatus: 'idle' | 'requesting' | 'ready' | 'playing' | 'granted' | 'error' | 'not-available';
-  adCountdown: number;
   
   setCurrentView: (view: string, promptId?: string | null) => void;
   openVideoDemo: (url: string, title: string, tool: string, description: string) => void;
@@ -96,16 +95,10 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [rewardedAdModalOpen, setRewardedAdModalOpen] = useState(false);
   const [pendingCopyPrompt, setPendingCopyPrompt] = useState<string | null>(null);
   const [adStatus, setAdStatus] = useState<'idle' | 'requesting' | 'ready' | 'playing' | 'granted' | 'error' | 'not-available'>('idle');
-  const [adCountdown, setAdCountdown] = useState<number>(5);
-  const timerRef = React.useRef<any>(null);
   const requestTimeoutRef = React.useRef<any>(null);
   const gptRewardEventRef = React.useRef<any>(null);
 
   const clearAdTimers = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
     if (requestTimeoutRef.current) {
       clearTimeout(requestTimeoutRef.current);
       requestTimeoutRef.current = null;
@@ -200,16 +193,6 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const requestRewardedAd = useCallback(() => {
     clearAdTimers();
 
-    // 1. If Test Mode is enabled (or while waiting for AdSense review to finish):
-    if (adSettings.testMode) {
-      setAdStatus('requesting');
-      // Realistic brief preparation then ready
-      requestTimeoutRef.current = setTimeout(() => {
-        setAdStatus('ready');
-      }, 700);
-      return;
-    }
-
     // 2. Live Google Ad Manager via GPT
     if (!window.googletag) {
       setAdStatus('not-available');
@@ -270,32 +253,10 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   }, [adSettings.testMode, adSettings.adManagerAdUnitPath, pendingCopyPrompt]);
 
+  // Real Google Publisher Tag rewarded ad
   const playRewardedAd = () => {
     clearAdTimers();
 
-    // In Test Mode or when GPT event is simulated/not available:
-    if (adSettings.testMode || !gptRewardEventRef.current) {
-      setAdStatus('playing');
-      const duration = adSettings.rewardDurationSeconds || 5;
-      setAdCountdown(duration);
-
-      let current = duration;
-      timerRef.current = setInterval(() => {
-        current -= 1;
-        setAdCountdown(current);
-        if (current <= 0) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-          setAdStatus('granted');
-          if (pendingCopyPrompt) {
-            navigator.clipboard.writeText(pendingCopyPrompt);
-          }
-        }
-      }, 1000);
-      return;
-    }
-
-    // Live Google Publisher Tag rewarded ad
     if (gptRewardEventRef.current && typeof gptRewardEventRef.current.makeRewardedVisible === 'function') {
       setAdStatus('playing');
       gptRewardEventRef.current.makeRewardedVisible();
@@ -306,6 +267,8 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           window.googletag.pubads().refresh([slot]);
         }
       });
+    } else {
+      setAdStatus('error');
     }
   };
 
@@ -385,7 +348,6 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       rewardedAdModalOpen,
       pendingCopyPrompt,
       adStatus,
-      adCountdown,
       setCurrentView,
       openVideoDemo,
       closeVideoDemo,

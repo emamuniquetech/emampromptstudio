@@ -550,31 +550,6 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
-              <label className="flex items-center justify-between flex-1 p-4 bg-[#0D0D18] border border-[#242438] rounded-2xl cursor-pointer">
-                <div>
-                  <span className="text-sm font-bold text-white block">Test Mode</span>
-                  <span className="text-[10px] text-gray-400">Use test ad units for development.</span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={adSettings.testMode}
-                  onChange={(e) => updateAdSettings({ ...adSettings, testMode: e.target.checked })}
-                  className="w-5 h-5 rounded bg-[#151525]"
-                />
-              </label>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-gray-400 block mb-1">Simulated Delay (Seconds)</label>
-              <input
-                type="number"
-                value={adSettings.rewardDurationSeconds}
-                onChange={(e) => updateAdSettings({ ...adSettings, rewardDurationSeconds: parseInt(e.target.value) || 5 })}
-                className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 text-xs text-white"
-              />
-            </div>
-
             <button
               onClick={() => alert('Ad settings updated successfully!')}
               className="w-full py-3 bg-[#9B75FF] text-white rounded-xl font-bold text-xs"
