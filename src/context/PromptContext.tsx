@@ -21,6 +21,7 @@ interface PromptContextType {
   rewardedAdModalOpen: boolean;
   pendingCopyPrompt: string | null;
   adStatus: 'idle' | 'requesting' | 'ready' | 'playing' | 'granted' | 'error' | 'not-available';
+  adCountdown: number;
   
   setCurrentView: (view: string, promptId?: string | null) => void;
   openVideoDemo: (url: string, title: string, tool: string, description: string) => void;
@@ -95,6 +96,21 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [rewardedAdModalOpen, setRewardedAdModalOpen] = useState(false);
   const [pendingCopyPrompt, setPendingCopyPrompt] = useState<string | null>(null);
   const [adStatus, setAdStatus] = useState<'idle' | 'requesting' | 'ready' | 'playing' | 'granted' | 'error' | 'not-available'>('idle');
+  const [adCountdown, setAdCountdown] = useState<number>(5);
+  const timerRef = React.useRef<any>(null);
+  const requestTimeoutRef = React.useRef<any>(null);
+  const gptRewardEventRef = React.useRef<any>(null);
+
+  const clearAdTimers = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (requestTimeoutRef.current) {
+      clearTimeout(requestTimeoutRef.current);
+      requestTimeoutRef.current = null;
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('emam_prompts_db', JSON.stringify(prompts));
@@ -180,61 +196,116 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAdSettings(settings);
   };
 
-  // Rewarded Ad Management via GPT
+  // Rewarded Ad Management via GPT or Instant Simulation
   const requestRewardedAd = useCallback(() => {
+    clearAdTimers();
+
+    // 1. If Test Mode is enabled (or while waiting for AdSense review to finish):
+    if (adSettings.testMode) {
+      setAdStatus('requesting');
+      // Realistic brief preparation then ready
+      requestTimeoutRef.current = setTimeout(() => {
+        setAdStatus('ready');
+      }, 700);
+      return;
+    }
+
+    // 2. Live Google Ad Manager via GPT
     if (!window.googletag) {
-      setAdStatus('error');
+      setAdStatus('not-available');
       return;
     }
 
     setAdStatus('requesting');
     const { googletag } = window;
 
+    // Safety timeout: If Google doesn't return an ad within 4.5 seconds (e.g. ad unit pending or no inventory):
+    requestTimeoutRef.current = setTimeout(() => {
+      console.warn('Ad request timed out from Google ad network (account may be under review)');
+      setAdStatus('not-available');
+    }, 4500);
+
     googletag.cmd.push(() => {
-      // Clear previous slots to ensure fresh request
-      googletag.destroySlots();
+      try {
+        googletag.destroySlots();
 
-      const rewardedSlot = googletag.defineOutOfPageSlot(
-        adSettings.adManagerAdUnitPath,
-        googletag.enums.OutOfPageFormat.REWARDED
-      );
+        const rewardedSlot = googletag.defineOutOfPageSlot(
+          adSettings.adManagerAdUnitPath,
+          googletag.enums.OutOfPageFormat.REWARDED
+        );
 
-      if (rewardedSlot) {
-        rewardedSlot.addService(googletag.pubads());
-        
-        googletag.pubads().addEventListener('rewardedSlotReady', (event: any) => {
-          setAdStatus('ready');
-        });
+        if (rewardedSlot) {
+          rewardedSlot.addService(googletag.pubads());
+          
+          googletag.pubads().addEventListener('rewardedSlotReady', (event: any) => {
+            clearTimeout(requestTimeoutRef.current);
+            gptRewardEventRef.current = event;
+            setAdStatus('ready');
+          });
 
-        googletag.pubads().addEventListener('rewardedSlotGranted', (event: any) => {
-          setAdStatus('granted');
-          // Automatically trigger copy after grant if we want, or wait for user to close
-        });
+          googletag.pubads().addEventListener('rewardedSlotGranted', (event: any) => {
+            clearTimeout(requestTimeoutRef.current);
+            setAdStatus('granted');
+            if (pendingCopyPrompt) {
+              navigator.clipboard.writeText(pendingCopyPrompt);
+            }
+          });
 
-        googletag.pubads().addEventListener('rewardedSlotClosed', (event: any) => {
-          setAdStatus(prev => prev === 'granted' ? 'granted' : 'idle');
-          // If status was already granted, we can finalize the copy
-        });
+          googletag.pubads().addEventListener('rewardedSlotClosed', (event: any) => {
+            clearTimeout(requestTimeoutRef.current);
+            setAdStatus(prev => prev === 'granted' ? 'granted' : 'idle');
+          });
 
-        googletag.enableServices();
-        googletag.display(rewardedSlot);
-      } else {
+          googletag.enableServices();
+          googletag.display(rewardedSlot);
+        } else {
+          clearTimeout(requestTimeoutRef.current);
+          setAdStatus('not-available');
+        }
+      } catch (err) {
+        console.error('GPT error', err);
+        clearTimeout(requestTimeoutRef.current);
         setAdStatus('not-available');
       }
     });
-  }, [adSettings.adManagerAdUnitPath]);
+  }, [adSettings.testMode, adSettings.adManagerAdUnitPath, pendingCopyPrompt]);
 
   const playRewardedAd = () => {
-    if (adStatus === 'ready' && window.googletag) {
+    clearAdTimers();
+
+    // In Test Mode or when GPT event is simulated/not available:
+    if (adSettings.testMode || !gptRewardEventRef.current) {
+      setAdStatus('playing');
+      const duration = adSettings.rewardDurationSeconds || 5;
+      setAdCountdown(duration);
+
+      let current = duration;
+      timerRef.current = setInterval(() => {
+        current -= 1;
+        setAdCountdown(current);
+        if (current <= 0) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+          setAdStatus('granted');
+          if (pendingCopyPrompt) {
+            navigator.clipboard.writeText(pendingCopyPrompt);
+          }
+        }
+      }, 1000);
+      return;
+    }
+
+    // Live Google Publisher Tag rewarded ad
+    if (gptRewardEventRef.current && typeof gptRewardEventRef.current.makeRewardedVisible === 'function') {
+      setAdStatus('playing');
+      gptRewardEventRef.current.makeRewardedVisible();
+    } else if (window.googletag) {
       setAdStatus('playing');
       window.googletag.pubads().getSlots().forEach((slot: any) => {
         if (slot.getOutOfPageVariant() === window.googletag.enums.OutOfPageFormat.REWARDED) {
           window.googletag.pubads().refresh([slot]);
         }
       });
-      // Note: GPT rewarded ads show automatically when ready usually, 
-      // but if we use display() it might show immediately.
-      // The event rewardedSlotReady is key.
     }
   };
 
@@ -245,11 +316,14 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setAdStatus('idle');
       requestRewardedAd();
     } else {
-      executeCopy();
+      if (promptText) {
+        navigator.clipboard.writeText(promptText);
+      }
     }
   };
 
   const executeCopy = () => {
+    clearAdTimers();
     if (pendingCopyPrompt) {
       navigator.clipboard.writeText(pendingCopyPrompt);
     }
@@ -259,6 +333,7 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const closeRewardedAdModal = () => {
+    clearAdTimers();
     setRewardedAdModalOpen(false);
     setPendingCopyPrompt(null);
     setAdStatus('idle');
@@ -310,6 +385,7 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       rewardedAdModalOpen,
       pendingCopyPrompt,
       adStatus,
+      adCountdown,
       setCurrentView,
       openVideoDemo,
       closeVideoDemo,
