@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "Prompt": {
+      "title": "Prompt",
+      "description": "AI prompt item stored in Firestore",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 100 },
+        "contentType": { "type": "string" },
+        "previewImage": { "type": "string" },
+        "fullPrompt": { "type": "string" },
+        "recommendedTool": { "type": "string" },
+        "aspectRatio": { "type": "string" },
+        "description": { "type": "string" },
+        "author": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "isTrending": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["title", "category", "contentType", "fullPrompt"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized admin users",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/prompts/{promptId}": {
+      "schema": { "$ref": "#/entities/Prompt" },
+      "description": "Prompts collection"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "Admins collection for role verification"
+    }
+  }
+}

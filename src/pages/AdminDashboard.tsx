@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { usePrompts } from '../context/PromptContext';
 import { PromptItem, ContentType } from '../types';
 import { 
-  Shield, Plus, Trash2, Edit, Eye, EyeOff, Flame, Download, Upload, Settings, LogOut, CheckCircle2, AlertTriangle, Sparkles, Image as ImageIcon, Film, HelpCircle 
+  Shield, Plus, Trash2, Edit, Eye, EyeOff, Flame, Download, Upload, Settings, LogOut, CheckCircle2, AlertTriangle, Sparkles, Image as ImageIcon, Film, HelpCircle, Lock 
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -19,10 +19,13 @@ export const AdminDashboard: React.FC = () => {
     updateAdSettings, 
     exportDatabase, 
     importDatabase, 
-    resetToDefault 
+    resetToDefault,
+    updateAdminPassword
   } = usePrompts();
 
-  const [activeTab, setActiveTab] = useState<'prompts' | 'add' | 'ads' | 'backup'>('prompts');
+  const [activeTab, setActiveTab] = useState<'prompts' | 'add' | 'ads' | 'backup' | 'security'>('prompts');
+  const [secForm, setSecForm] = useState({ oldPass: '', newPass: '', confirmPass: '' });
+  const [secMsg, setSecMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form state for Add/Edit
@@ -218,6 +221,14 @@ export const AdminDashboard: React.FC = () => {
           }`}
         >
           <Download className="w-4 h-4" /> Backup & Restore
+        </button>
+        <button
+          onClick={() => setActiveTab('security')}
+          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            activeTab === 'security' ? 'bg-[#9B75FF] text-white shadow-md' : 'bg-[#151525] text-gray-400 hover:text-white border border-[#242438]'
+          }`}
+        >
+          <Lock className="w-4 h-4" /> Security & Password
         </button>
       </div>
 
@@ -608,6 +619,87 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tab 5: Security & Password */}
+      {activeTab === 'security' && (
+        <div className="bg-[#151525] border border-[#242438] p-8 rounded-3xl shadow-xl max-w-xl mx-auto space-y-6">
+          <div className="space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-[#9B75FF]/20 text-[#4DDCF5] flex items-center justify-center border border-[#9B75FF]/40">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Admin Security & Password</h2>
+            <p className="text-xs text-gray-400">Change your secure admin portal password. Minimum 6 characters required.</p>
+          </div>
+
+          {secMsg && (
+            <div className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+              secMsg.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400' : 'bg-red-500/20 border border-red-500/40 text-red-400'
+            }`}>
+              {secMsg.text}
+            </div>
+          )}
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (secForm.newPass !== secForm.confirmPass) {
+              setSecMsg({ type: 'error', text: 'New passwords do not match.' });
+              return;
+            }
+            if (secForm.newPass.length < 6) {
+              setSecMsg({ type: 'error', text: 'New password must be at least 6 characters.' });
+              return;
+            }
+            const success = updateAdminPassword(secForm.oldPass, secForm.newPass);
+            if (success) {
+              setSecMsg({ type: 'success', text: 'Admin password successfully updated!' });
+              setSecForm({ oldPass: '', newPass: '', confirmPass: '' });
+            } else {
+              setSecMsg({ type: 'error', text: 'Incorrect current password.' });
+            }
+          }} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-gray-400 block mb-1">Current Password</label>
+              <input
+                type="password"
+                required
+                value={secForm.oldPass}
+                onChange={(e) => setSecForm({ ...secForm, oldPass: e.target.value })}
+                placeholder="Enter current password..."
+                className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#9B75FF]"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-400 block mb-1">New Password (Min 6 chars)</label>
+              <input
+                type="password"
+                required
+                value={secForm.newPass}
+                onChange={(e) => setSecForm({ ...secForm, newPass: e.target.value })}
+                placeholder="Enter new password..."
+                className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#9B75FF]"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-400 block mb-1">Confirm New Password</label>
+              <input
+                type="password"
+                required
+                value={secForm.confirmPass}
+                onChange={(e) => setSecForm({ ...secForm, confirmPass: e.target.value })}
+                placeholder="Confirm new password..."
+                className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#9B75FF]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-gradient-to-r from-[#9B75FF] to-[#4DDCF5] text-[#0D0D18] rounded-xl font-extrabold text-xs shadow-lg shadow-[#9B75FF]/30 hover:opacity-95 transition-all"
+            >
+              Update Admin Password
+            </button>
+          </form>
         </div>
       )}
 

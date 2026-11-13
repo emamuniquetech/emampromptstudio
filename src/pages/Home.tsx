@@ -290,6 +290,66 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* AdSense Value Content & Editorial Guide Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-8 border-t border-[#242438]">
+        <div className="bg-[#151525] border border-[#242438] p-8 sm:p-10 rounded-3xl space-y-6">
+          <div className="inline-flex items-center gap-2 bg-[#9B75FF]/20 text-[#4DDCF5] px-4 py-1.5 rounded-full text-xs font-bold border border-[#9B75FF]/30">
+            <Sparkles className="w-4 h-4" /> Creator Editorial & Guide
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            The Ultimate Guide to AI Photo & Video Prompt Engineering in 2026
+          </h2>
+
+          <div className="space-y-4 text-xs sm:text-sm text-gray-300 leading-relaxed">
+            <p>
+              Welcome to <strong>Emam Prompt Studio</strong>, your premier destination for high-performing artificial intelligence prompts. In the rapidly evolving landscape of digital creation, crafting the exact prompt for Midjourney v6, Stable Diffusion XL, Runway Gen-3, and Kling AI requires precision, styling keywords, and aspect ratio configuration.
+            </p>
+            <p>
+              Whether you are generating cinematic portraits, traditional South Asian Jamdani fashion imagery, or hyper-realistic text-to-video reels for TikTok and Instagram, our curated prompt library provides creators with the exact parameters needed to eliminate guesswork and achieve professional viral outputs.
+            </p>
+            <h3 className="text-lg font-bold text-white pt-2">Why Use Curated AI Prompts?</h3>
+            <ul className="list-disc pl-5 space-y-2 text-gray-300">
+              <li><strong>Consistency:</strong> Maintain exact lighting, camera angles, and character consistency across multiple generations.</li>
+              <li><strong>Time-Saving:</strong> Skip hours of trial-and-error by copying battle-tested master prompts optimized for modern generative AI engines.</li>
+              <li><strong>Cinematic Quality:</strong> Leverage advanced negative prompts, lighting keywords (e.g., volumetric lighting, ray tracing), and rendering engine tags effortlessly.</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* FAQ Section for AdSense Value Compliance */}
+        <div className="bg-[#151525] border border-[#242438] p-8 sm:p-10 rounded-3xl space-y-6">
+          <h3 className="text-xl font-bold text-white">Frequently Asked Questions (FAQ)</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs sm:text-sm">
+            <div className="bg-[#0D0D18] p-5 rounded-2xl border border-[#242438] space-y-2">
+              <h4 className="font-bold text-white">How do I use these prompts?</h4>
+              <p className="text-gray-400 leading-relaxed">
+                Simply browse our Photo or Video prompt catalog, click on any prompt to view full parameters, and click copy to paste directly into your preferred AI tool like Midjourney, Runway, or CapCut.
+              </p>
+            </div>
+            <div className="bg-[#0D0D18] p-5 rounded-2xl border border-[#242438] space-y-2">
+              <h4 className="font-bold text-white">Are these prompts free to use?</h4>
+              <p className="text-gray-400 leading-relaxed">
+                Yes! All prompts in Emam Prompt Studio are completely free for creators, students, and digital artists to use in personal and commercial AI projects.
+              </p>
+            </div>
+            <div className="bg-[#0D0D18] p-5 rounded-2xl border border-[#242438] space-y-2">
+              <h4 className="font-bold text-white">Which AI tools are supported?</h4>
+              <p className="text-gray-400 leading-relaxed">
+                Our prompts are optimized for leading generative AI platforms including Midjourney v6, Runway Gen-3 Alpha, Kling AI, Stable Diffusion XL, and CapCut video editor.
+              </p>
+            </div>
+            <div className="bg-[#0D0D18] p-5 rounded-2xl border border-[#242438] space-y-2">
+              <h4 className="font-bold text-white">How does the reward system work?</h4>
+              <p className="text-gray-400 leading-relaxed">
+                Supporting the platform through brief sponsored ad impressions helps us keep Emam Prompt Studio free and continuously updated with fresh viral prompts.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 };

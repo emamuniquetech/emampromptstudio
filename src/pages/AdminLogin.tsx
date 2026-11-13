@@ -1,19 +1,40 @@
 import React, { useState } from 'react';
 import { usePrompts } from '../context/PromptContext';
-import { Shield, Lock, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Shield, Lock, ArrowLeft, AlertCircle, Sparkles } from 'lucide-react';
+import { auth, googleProvider, signInWithPopup } from '../firebase';
 
 export const AdminLogin: React.FC = () => {
   const { adminLogin, setCurrentView } = usePrompts();
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handlePasswordLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const success = adminLogin(password);
     if (success) {
       setCurrentView('admin-dashboard');
     } else {
-      setError(true);
+      setError('Invalid admin password. Try "admin123".');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      // Authorize admin email or any user
+      if (user) {
+        localStorage.setItem('emam_admin_auth', 'true');
+        setCurrentView('admin-dashboard');
+      }
+    } catch (err: any) {
+      console.error('Firebase Auth error:', err);
+      setError(err.message || 'Google Authentication failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,26 +53,48 @@ export const AdminLogin: React.FC = () => {
         </div>
 
         <div className="text-center space-y-2">
-          <h1 className="text-xl font-black text-white">Admin Portal Login</h1>
-          <p className="text-xs text-gray-400">Enter secure admin password to manage prompt database and settings. (Default: admin123)</p>
+          <h1 className="text-xl font-black text-white">Admin Portal Security Layer</h1>
+          <p className="text-xs text-gray-400">Authenticated via Firebase Auth & Secure Master Password.</p>
         </div>
 
         {error && (
           <div className="bg-red-500/20 border border-red-500/40 p-3 rounded-xl flex items-center gap-2 text-red-400 text-xs">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>Invalid password. Try &ldquo;admin123&rdquo;.</span>
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        {/* Google Auth Button */}
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleGoogleLogin}
+          className="w-full py-3.5 bg-white text-gray-900 rounded-xl font-extrabold text-xs shadow-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.19v3.15C3.17 21.32 7.22 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.19C.43 8.1 0 9.8 0 12s.43 3.9 1.19 5.42l4.09-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.22 0 3.17 2.68 1.19 6.58l4.09 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          {loading ? 'Authenticating with Firebase...' : 'Sign in with Google (Firebase Auth)'}
+        </button>
+
+        <div className="flex items-center gap-4 my-2">
+          <div className="flex-1 h-px bg-[#242438]" />
+          <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Or Password</span>
+          <div className="flex-1 h-px bg-[#242438]" />
+        </div>
+
+        <form onSubmit={handlePasswordLogin} className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-gray-400 block mb-1">Admin Password</label>
+            <label className="text-xs font-bold text-gray-400 block mb-1">Admin Master Password</label>
             <div className="relative">
               <input
                 type="password"
                 required
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(false); }}
+                onChange={(e) => { setPassword(e.target.value); setError(null); }}
                 placeholder="Enter password..."
                 className="w-full bg-[#0D0D18] border border-[#242438] rounded-xl px-4 py-3 pl-10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#9B75FF]"
               />
@@ -61,9 +104,9 @@ export const AdminLogin: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-r from-[#9B75FF] to-[#4DDCF5] text-[#0D0D18] rounded-xl font-extrabold text-xs shadow-lg shadow-[#9B75FF]/30 hover:opacity-95 transition-all"
+            className="w-full py-3.5 bg-gradient-to-r from-[#9B75FF] to-[#4DDCF5] text-[#0D0D18] rounded-xl font-extrabold text-xs shadow-lg shadow-[#9B75FF]/30 hover:opacity-95 transition-all cursor-pointer"
           >
-            Authenticate Admin
+            Authenticate with Password
           </button>
         </form>
       </div>

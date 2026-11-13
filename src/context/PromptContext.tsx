@@ -30,6 +30,7 @@ interface PromptContextType {
   
   adminLogin: (pass: string) => boolean;
   adminLogout: () => void;
+  updateAdminPassword: (oldPass: string, newPass: string) => boolean;
   
   addPrompt: (prompt: Omit<PromptItem, 'id' | 'createdAt'>) => void;
   updatePrompt: (id: string, prompt: Partial<PromptItem>) => void;
@@ -142,10 +143,22 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const isFavorite = (id: string) => favorites.includes(id);
 
   const adminLogin = (pass: string) => {
-    if (pass === 'admin123' || pass === 'emam2026') {
+    const customPass = localStorage.getItem('emam_admin_pass') || 'admin123';
+    if (pass === customPass || pass === 'emam2026') {
       setIsAdminLoggedIn(true);
       localStorage.setItem('emam_admin_auth', 'true');
       return true;
+    }
+    return false;
+  };
+
+  const updateAdminPassword = (oldPass: string, newPass: string) => {
+    const currentPass = localStorage.getItem('emam_admin_pass') || 'admin123';
+    if (oldPass === currentPass || oldPass === 'emam2026') {
+      if (newPass && newPass.length >= 6) {
+        localStorage.setItem('emam_admin_pass', newPass);
+        return true;
+      }
     }
     return false;
   };
@@ -355,6 +368,7 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isFavorite,
       adminLogin,
       adminLogout,
+      updateAdminPassword,
       addPrompt,
       updatePrompt,
       deletePrompt,
